@@ -1,2 +1,6 @@
 # RebornRecBlue
-A direct port of Reborn Rec(C# ASP.NET) to Python(FastAPI) 
+## A direct port of **Reborn Rec**(_C# ASP.NET+) to **Python**(_FastAPI_)
+
+
+
+
