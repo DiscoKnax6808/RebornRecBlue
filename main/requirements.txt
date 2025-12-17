@@ -1,0 +1,6 @@
+fastapi[all]
+uvicorn
+requests
+os
+cryptography
+random
