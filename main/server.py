@@ -52,7 +52,7 @@ img = FastAPI()
 
 wsserver.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # allow all
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -418,7 +418,8 @@ async def playerevents():
 
 @app.get("/api/events/v3/list")
 async def eventsv3list():
-    return [] #{"Created":[],"Responses":[]}
+    return [] # Originally i thought it was {"Created":[],"Responses":[]} but thats
+              # for later 2018..
 
 @app.get("/api/PlayerReporting/v1/moderationBlockDetails")
 async def prmodblockdetails():
@@ -573,7 +574,8 @@ async def bookmarked():
 
 
 
-
+# Dont try fixing this. its just an annoying syntax that python does when doing an f string
+# you cant put { or } in a f string or whatever you put in it it will think its a variable :(
 lb = "{"
 rb = "}"
 
@@ -600,6 +602,9 @@ async def sendwsmsg(enum: int, msg: str):
 
 
 
+
+
+# This is for the backend Discord announcements stuff.
 async def connect_discord_backend():
     global discord_ws, discord_http
 
