@@ -194,7 +194,7 @@ async def profilesv1platformlogin():
 @app.post("/api/platformlogin/v1")
 async def platformloginv1():
     return {
-        "Token": "67 Mangoes",
+        "Token": "67",
         "PlayerId":userid,
         "Error":"",
         "FirstLoginOfTheDay":True
@@ -423,6 +423,11 @@ async def eventsv3list():
     return [] # Originally i thought it was {"Created":[],"Responses":[]} but thats
               # for later 2018..
 
+
+@app.get("/api/playerevents/v1/all")
+async def playereventsall():
+    return {"Created":[],"Responses":[]}
+
 @app.get("/api/PlayerReporting/v1/moderationBlockDetails")
 async def prmodblockdetails():
     return {
@@ -571,6 +576,13 @@ async def consumablesv1():
 async def obj():
     return []
 
+@app.get("/api/storefronts/v1/allGiftDrops/2")
+async def allgiftdrops():
+    return []
+
+@app.get("/api/rooms/v1/myRecent")
+async def recentrooms():
+    return []
 
 
 
@@ -609,6 +621,8 @@ async def sendwsmsg(enum: int, msg: str):
     )
 
     return "Success"
+
+
 
 
 
