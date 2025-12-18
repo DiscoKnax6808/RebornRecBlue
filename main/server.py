@@ -61,11 +61,11 @@ wsserver.add_middleware(
 
 @app.get("/")
 async def nameserver():
-    return {"API": "https://localhost:2001", "Images": "http://localhost:2058", "Notifications": "ws://localhost:2002"}
+    return {"API": "https://localhost:2001", "Images": "http://localhost:2004", "Notifications": "ws://localhost:2002"}
 
 @app.get("/http")
 async def nameserver():
-    return {"API": "http://localhost:2003", "Images": "http://localhost:2058", "Notifications": "ws://localhost:2002"}
+    return {"API": "http://localhost:2003", "Images": "http://localhost:2004", "Notifications": "ws://localhost:2002"}
 
 @app.get("/api/versioncheck/v3")
 @app.get("/api/versioncheck/v2")
