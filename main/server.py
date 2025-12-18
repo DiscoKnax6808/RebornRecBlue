@@ -45,6 +45,7 @@ avatar = read_json_file(f"{BASE_DIR}\\avatar.txt")
 settings = read_json_file(f"{BASE_DIR}\\settings.txt")
 avataritems = read_json_file(f"{BASE_DIR}\\avataritems.txt")
 equipment = read_json_file(f"{BASE_DIR}\\equipment.txt")
+consumables = read_json_file(f"{BASE_DIR}\\consumables.txt")
 
 app = FastAPI()
 wsserver = FastAPI()
@@ -64,7 +65,7 @@ async def nameserver():
 
 @app.get("/http")
 async def nameserver():
-    return {"API": "http://localhost:2003", "Images": "http://localhost:2004", "Notifications": "ws://localhost:2002"}
+    return {"API": "http://localhost:2003", "Images": "http://localhost:2058", "Notifications": "ws://localhost:2002"}
 
 @app.get("/api/versioncheck/v3")
 @app.get("/api/versioncheck/v2")
@@ -347,6 +348,7 @@ async def avatarv2set(request: Request):
     avatar = data
     return []
 
+@app.post("/api/images/v3/profile")
 @app.post("/api/images/v2/profile")
 async def upload_profile_image(request: Request, image: UploadFile | None = File(None)):
     path = os.path.join(BASE_DIR, "profileimage.png")
@@ -559,6 +561,14 @@ async def myrooms():
 
 @app.get("/api/rooms/v1/mybookmarkedrooms")
 async def bookmarked():
+    return []
+
+@app.get("/api/consumables/v1/getUnlocked")
+async def consumablesv1():
+    return consumables
+
+@app.post("/api/objectives/v1/updateobjective")
+async def obj():
     return []
 
 
