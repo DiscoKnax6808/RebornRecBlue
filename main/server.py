@@ -29,12 +29,13 @@ def read_str_file(path):
     except:
         return "UNKNOWN"  
 
-def read_json_file(path):
+def read_json_file(path, default=None):
     try:
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
-    except:
-        return []  
+    except Exception as e:
+        print(f"[JSON LOAD ERROR] {path} -> {e}")
+        return default 
 
 userid = read_int_file(f"{BASE_DIR}\\Profile\\userid.txt")
 username = read_str_file(f"{BASE_DIR}\\Profile\\username.txt")
@@ -47,6 +48,7 @@ settings = read_json_file(f"{BASE_DIR}\\settings.txt")
 avataritems = read_json_file(f"{BASE_DIR}\\avataritems.txt")
 equipment = read_json_file(f"{BASE_DIR}\\equipment.txt")
 consumables = read_json_file(f"{BASE_DIR}\\consumables.txt")
+rooms = read_json_file(f"{BASE_DIR}\\Rooms\\rooms.json")
 
 app = FastAPI()
 wsserver = FastAPI()
@@ -538,6 +540,31 @@ async def join_random(request: Request):
     return {"Result":0,"GameSession":result}
 
 
+@app.post("/api/gamesessions/v3/joinroom")
+async def join_random(request: Request):
+    body = await request.body()
+    data = json.loads(body.decode("utf-8"))
+
+
+    print(data["RoomName"])
+
+    roomdata = rooms[data["RoomName"]]
+    
+    result = {
+        "Result":0,
+        "GameSession":roomdata["GameSession"],
+        "RoomDetails":roomdata["RoomDetails"]#,
+        #"Scenes":roomdata["Scenes"]
+    }
+
+
+    with open(f"{BASE_DIR}\\gamesession.txt", "w", encoding="utf-8") as f:
+        f.write(json.dumps(result["GameSession"]))
+
+
+    return result
+
+
 @img.get("//img/alt/{img}")
 @img.get("//img/{img}")
 @img.get("/img/{img}")
@@ -745,56 +772,53 @@ async def signalr_invoke(ws: WebSocket, target: str, args: list):
     }
     await ws.send_text(json.dumps(frame) + "\x1e")
 
+async def signalr_send_invocation(ws: WebSocket, payload: dict):
+    await ws.send_text(json.dumps(payload) + "\x1e")
 
+async def send(ws:WebSocket,payload:dict): await ws.send_text(json.dumps(payload)+"\x1e")
+
+
+def load_gamesession():
+    path=os.path.join(BASE_DIR,"gamesession.txt")
+    gs={
+        "GameSessionId":0,"PhotonRegionId":"","PhotonRoomId":"","Name":"","RoomId":0,
+        "RoomSceneId":0,"RoomSceneLocationId":"","IsSandbox":False,"DataBlobName":"",
+        "PlayerEventId":None,"Private":False,"GameInProgress":False,"MaxCapacity":0,"IsFull":False
+    }
+    if os.path.isfile(path):
+        try:
+            t=open(path,"r",encoding="utf-8").read().strip()
+            if t: gs.update(json.loads(t))
+        except: pass
+    return gs
 
 @app.websocket("/hub/v1")
-async def signalr_ws(websocket: WebSocket):
-    await websocket.accept()
-
+async def signalr(ws:WebSocket):
+    await ws.accept()
     try:
-        msg = await websocket.receive()
-        if "text" in msg:
-            if msg["text"] == '{"protocol":"json","version":1}\x1e':
-                await websocket.send_text('{}\x1e')
-
-        hub_info = {
-            "url": "ws://localhost:2057",
-            "ConnectionId": "RebornBlueConnect",
-            "SupportedTransports": [],
-            "negotiateVersion": 0,
-            "Context": None,
-            "CookiesValidator": None,
-            "EmitOnPing": False,
-            "ID": None,
-            "IgnoreExtensions": False,
-            "OriginValidator": None,
-            "Protocol": "",
-            "StartTime": "9999-12-31T23:59:59.9999999",
-            "State": 0
-        }
-
-        await signalr_invoke(
-            websocket,
-            "HubConnection",
-            [json.dumps(hub_info)]
-        )
-
+        msg=await ws.receive()
+        if "text" in msg and msg["text"]=='{"protocol":"json","version":1}\x1e': await ws.send_text('{}\x1e')
+        await send(ws,{
+            "type":1,"invocationId":"owo","nonblocking":True,"target":"HubConnection",
+            "arguments":["{\"url\":\"ws://localhost:2003\",\"ConnectionId\":\"RebornConnect\"}"],
+            "item":"","result":"200 OK","error":""
+        })
         while True:
-            msg = await websocket.receive()
-
-            print("[WS RECIEVE]", msg)
-
-            if msg["type"] == "websocket.disconnect":
-                break
-
-            if "text" in msg:
-                print("[SignalR TEXT]", msg["text"])
-
-            elif "bytes" in msg:
-                print("[SignalR BYTES]", msg["bytes"])
-
-    except WebSocketDisconnect:
-        print("SignalR disconnected")
+            msg=await ws.receive()
+            if msg["type"]=="websocket.disconnect": break
+            raw=msg.get("text") or msg.get("bytes",b"").decode("utf-8")
+            if not raw: continue
+            raw=raw.rstrip("\x1e")
+            try:data=json.loads(raw)
+            except: continue
+            if data.get("type")==1 and data.get("target")=="SubscribeToPlayers":
+                gs=load_gamesession()
+                await send(ws,{
+                    "type":1,"invocationId":"uwu","nonblocking":True,"target":"Notification",
+                    "arguments":[json.dumps({"Id":4,"Msg":{"PlayerId":6007619,"IsOnline":True,"PlayerType":2,"GameSession":gs}})],
+                    "item":"","result":"200 OK","error":""
+                })
+    except WebSocketDisconnect: print("SignalR disconnected")
 
 
 

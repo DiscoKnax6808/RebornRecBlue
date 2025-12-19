@@ -1,0 +1,73 @@
+{
+    "DormRoom":{
+  "GameSession": {
+    "GameSessionId": 20182,
+    "PhotonRegionId": "us",
+    "PhotonRoomId": "1Reborn0.4.1",
+    "Name": "DormRoom",
+    "RoomId": 1,
+    "RoomSceneId": 1,
+    "RoomSceneLocationId": "76d98498-60a1-430c-ab76-b54a29b7a163",
+    "IsSandbox": true,
+    "DataBlobName": "",
+    "PlayerEventId": null,
+    "Private": false,
+    "GameInProgress": false,
+    "MaxCapacity": 20,
+    "IsFull": false
+  },
+  "RoomDetails": {
+    "Room": {
+      "RoomId": 1,
+      "Name": "DormRoom",
+      "Description": "A private room. this is cool",
+      "CreatorPlayerId": 6007619,
+      "ImageName": "ca673ff19c054158a15ff00f0b844ba7",
+      "State": 0,
+      "Accessibility": 1,
+      "SupportsLevelVoting": false,
+      "IsAGRoom": true,
+      "CloningAllowed": false,
+      "SupportsScreens": true,
+      "SupportsWalkVR": true,
+      "SupportsTeleportVR": true,
+      "ReplicationId": null,
+      "ReleaseStatus": 0
+    },
+    "Scenes": [
+      {
+        "RoomSceneId": 1,
+        "RoomId": 1,
+        "RoomSceneLocationId": "76d98498-60a1-430c-ab76-b54a29b7a163",
+        "Name": "dormroom2",
+        "IsSandbox": true,
+        "DataBlobName": "",
+        "MaxPlayers": 20,
+        "CanMatchmakeInto": true,
+        "DataModifiedAt": "2025-12-19T16:12:29.4773196-05:00",
+        "ReplicationId": null,
+        "UseLevelBasedMatchmaking": false,
+        "UseAgeBasedMatchmaking": false,
+        "UseRecRoyaleMatchmaking": false,
+        "ReleaseStatus": 0,
+        "SupportsJoinInProgress": false
+      }
+    ],
+    "CoOwners": [],
+    "InvitedCoOwners": [],
+    "Hosts": [],
+    "InvitedHosts": [],
+    "CheerCount": 1,
+    "FavoriteCount": 1,
+    "VisitCount": 1,
+    "Tags": [
+      {
+        "Tag": "recroomoriginal",
+        "Type": 2
+      }
+    ]
+  }
+},
+
+    "NextRoom":{}
+}

@@ -189,6 +189,12 @@ def SETUP():
     with open(f"{BASE_DIR}\\discord.png", "wb") as f:
         f.write(downloadbytes("https://github.com/DiscoKnax6808/RebornRecBlue/blob/main/datatodownload/discord.png?raw=true"))
 
+    clear()
+    print(CGreen+ "Downloading 2018 room data..." + CReset)
+
+    with open(f"{BASE_DIR}\\Rooms\\rooms.json", "w", encoding="utf-8") as f:
+        f.write(downloaddata("https://raw.githubusercontent.com/DiscoKnax6808/RebornRecBlue/refs/heads/main/datatodownload/rooms.json"))
+
 
         
 
