@@ -148,7 +148,7 @@ def SETUP():
     print(CGreen+ "Setting up... (May take a minute to download everything.)" + CReset)
     winsound.Beep(700, 100)
     with open(f"{BASE_DIR}\\avatar.txt", "w", encoding="utf-8") as f:
-        f.write(downloaddata("https://raw.githubusercontent.com/aqquad/RebornRec/main/avatar.txt"))
+        f.write(downloaddata("https://raw.githubusercontent.com/DiscoKnax6808/RebornRecBlue/refs/heads/main/datatodownload/avatar.txt"))
     with open(f"{BASE_DIR}\\avataritems.txt", "w", encoding="utf-8") as f:
         f.write(downloaddata("https://raw.githubusercontent.com/DiscoKnax6808/RebornRecBlue/refs/heads/main/datatodownload/avataritems.txt"))
     with open(f"{BASE_DIR}\\equipment.txt", "w", encoding="utf-8") as f:

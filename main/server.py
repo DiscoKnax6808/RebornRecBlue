@@ -41,6 +41,7 @@ username = read_str_file(f"{BASE_DIR}\\Profile\\username.txt")
 selectedCheer = read_int_file(f"{BASE_DIR}\\Profile\\cheer.txt")
 level = read_int_file(f"{BASE_DIR}\\Profile\\level.txt")
 configs = read_json_file(f"{BASE_DIR}\\configv2.txt")
+configsall = read_json_file(f"{BASE_DIR}\\gameconfigs.txt")
 avatar = read_json_file(f"{BASE_DIR}\\avatar.txt")
 settings = read_json_file(f"{BASE_DIR}\\settings.txt")
 avataritems = read_json_file(f"{BASE_DIR}\\avataritems.txt")
@@ -66,6 +67,10 @@ async def nameserver():
 @app.get("/http")
 async def nameserver():
     return {"API": "http://localhost:2003", "Images": "http://localhost:2004", "Notifications": "ws://localhost:2002"}
+
+@app.get("/httpSR")
+async def nameserver():
+    return {"API": "http://localhost:2003", "Images": "http://localhost:2004", "Notifications": "http://localhost:2003"}
 
 @app.get("/api/versioncheck/v3")
 @app.get("/api/versioncheck/v2")
@@ -535,6 +540,9 @@ async def join_random(request: Request):
 
 @img.get("//img/alt/{img}")
 @img.get("//img/{img}")
+@img.get("/img/{img}")
+@img.get("/alt/{img}")
+@img.get("/{img}")
 async def giveimage(img: str):
 
     if img == "discord.png":
@@ -560,6 +568,7 @@ async def avatarv1saved():
 async def objectivesmyprogress():
     return {"Objectives":[{"Index":2,"Group":0,"Progress":0.0,"VisualProgress":0.0,"IsCompleted":False,"IsRewarded":False},{"Index":1,"Group":0,"Progress":0.0,"VisualProgress":0.0,"IsCompleted":False,"IsRewarded":False},{"Index":0,"Group":0,"Progress":0.0,"VisualProgress":0.0,"IsCompleted":False,"IsRewarded":False}],"ObjectiveGroups":[{"Group":0,"IsCompleted":False,"ClearedAt":"2021-04-18T01:59:14.864Z"}]}
 
+@app.get("/api/rooms/v2/myrooms")
 @app.get("/api/rooms/v1/myrooms")
 async def myrooms():
     return []
@@ -584,6 +593,30 @@ async def allgiftdrops():
 async def recentrooms():
     return []
 
+@app.get("/api/gameconfigs/v1/all")
+async def gameconfigsall():
+    return configsall
+
+
+@app.post("/api/presence/v1/setplayertype")
+async def setplayertype():
+    return []
+
+@app.get("/api/avatar/v3/saved")
+async def avatarv3saved():
+    return []
+
+@app.get("/api/checklist/v1/current")
+async def checklistv1current():
+    return [{"Order":0,"Objective":400,"Count":3,"CreditAmount":200},{"Order":1,"Objective":1003,"Count":40,"CreditAmount":200},{"Order":2,"Objective":603,"Count":50,"CreditAmount":500},{"Order":3,"Objective":802,"Count":10,"CreditAmount":100},{"Order":4,"Objective":38,"Count":1,"CreditAmount":500},{"Order":5,"Objective":502,"Count":3000,"CreditAmount":150},{"Order":6,"Objective":35,"Count":20,"CreditAmount":100}]
+
+@app.get("//api/chat/v2/myChats")
+async def chatv2mychat():
+    return []
+
+@app.get("/api/playersubscriptions/v1/my")
+async def playersubscriptions():
+    return []
 
 
 
@@ -697,6 +730,82 @@ async def websocket_endpoint(websocket: WebSocket):
                 await websocket.send_text('{"SessionId":"67"}')
     except WebSocketDisconnect:
         print(f"WebSocket client disconnected: {websocket.client}")
+
+
+async def signalr_invoke(ws: WebSocket, target: str, args: list):
+    frame = {
+        "type": 1,
+        "invocationId": "owo",
+        "nonblocking": True,
+        "target": target,
+        "arguments": args,
+        "item": "",
+        "result": "200 OK",
+        "error": ""
+    }
+    await ws.send_text(json.dumps(frame) + "\x1e")
+
+
+
+@app.websocket("/hub/v1")
+async def signalr_ws(websocket: WebSocket):
+    await websocket.accept()
+
+    try:
+        msg = await websocket.receive()
+        if "text" in msg:
+            if msg["text"] == '{"protocol":"json","version":1}\x1e':
+                await websocket.send_text('{}\x1e')
+
+        hub_info = {
+            "url": "ws://localhost:2057",
+            "ConnectionId": "RebornBlueConnect",
+            "SupportedTransports": [],
+            "negotiateVersion": 0,
+            "Context": None,
+            "CookiesValidator": None,
+            "EmitOnPing": False,
+            "ID": None,
+            "IgnoreExtensions": False,
+            "OriginValidator": None,
+            "Protocol": "",
+            "StartTime": "9999-12-31T23:59:59.9999999",
+            "State": 0
+        }
+
+        await signalr_invoke(
+            websocket,
+            "HubConnection",
+            [json.dumps(hub_info)]
+        )
+
+        while True:
+            msg = await websocket.receive()
+
+            print("[WS RECIEVE]", msg)
+
+            if msg["type"] == "websocket.disconnect":
+                break
+
+            if "text" in msg:
+                print("[SignalR TEXT]", msg["text"])
+
+            elif "bytes" in msg:
+                print("[SignalR BYTES]", msg["bytes"])
+
+    except WebSocketDisconnect:
+        print("SignalR disconnected")
+
+
+
+
+
+
+
+
+
+
+
 
 async def startserver():
     import certgen
