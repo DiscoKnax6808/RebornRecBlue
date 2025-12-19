@@ -1,0 +1,1 @@
+{"GameSessionId": 20182, "PhotonRegionId": "us", "PhotonRoomId": "1Reborn0.4.1", "Name": "DormRoom", "RoomId": 1, "RoomSceneId": 1, "RoomSceneLocationId": "76d98498-60a1-430c-ab76-b54a29b7a163", "IsSandbox": true, "DataBlobName": "", "PlayerEventId": null, "Private": false, "GameInProgress": false, "MaxCapacity": 20, "IsFull": false}

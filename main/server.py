@@ -759,66 +759,89 @@ async def websocket_endpoint(websocket: WebSocket):
         print(f"WebSocket client disconnected: {websocket.client}")
 
 
-async def signalr_invoke(ws: WebSocket, target: str, args: list):
-    frame = {
+async def signalr_handler(in_data, userid):
+    if isinstance(in_data, bytes):
+        messages = in_data.decode('utf-8').split('\x1e')[0]
+    else:
+        messages = in_data.split('\x1e')[0]
+
+    try:
+        data = json.loads(messages)
+    except json.JSONDecodeError as e:
+        return json.dumps({
+            "type": 1,
+            "target": "Error",
+            "arguments": [f"Invalid JSON: {str(e)}"]
+        }) + '\x1e'
+
+    target = data.get('target')
+
+    if target in ["SubscribeToPlayers", "heartbeat", "heartbeat2"]:
+        new_game_session = {
+            "GameSessionId": 20182,
+            "PhotonRegionId": "us",
+            "PhotonRoomId": "1Reborn0.4.1",
+            "Name": "DormRoom",
+            "RoomId": 1,
+            "RoomSceneId": 1,
+            "RoomSceneLocationId": "76d98498-60a1-430c-ab76-b54a29b7a163",
+            "IsSandbox": True,
+            "DataBlobName": "",
+            "PlayerEventId": None,
+            "Private": False,
+            "GameInProgress": False,
+            "MaxCapacity": 20,
+            "IsFull": False
+        }
+
+        new_msg = {
+            "PlayerId": userid,
+            "IsOnline": True,
+            "PlayerType": 2,
+            "GameSession": new_game_session
+        }
+
+        notification_payload = {
+            "Id": 12,
+            "Msg": new_msg
+        }
+
+        response = {
+            "type": 1,
+            "target": "Notification",
+            "arguments": [json.dumps(notification_payload)]
+        }
+
+        return json.dumps(response) + '\x1e'
+
+    response = {
         "type": 1,
-        "invocationId": "owo",
-        "nonblocking": True,
-        "target": target,
-        "arguments": args,
-        "item": "",
-        "result": "200 OK",
-        "error": ""
+        "target": "Notification",
+        "arguments": []
     }
-    await ws.send_text(json.dumps(frame) + "\x1e")
+    return json.dumps(response) + '\x1e'
 
-async def signalr_send_invocation(ws: WebSocket, payload: dict):
-    await ws.send_text(json.dumps(payload) + "\x1e")
-
-async def send(ws:WebSocket,payload:dict): await ws.send_text(json.dumps(payload)+"\x1e")
-
-
-def load_gamesession():
-    path=os.path.join(BASE_DIR,"gamesession.txt")
-    gs={
-        "GameSessionId":0,"PhotonRegionId":"","PhotonRoomId":"","Name":"","RoomId":0,
-        "RoomSceneId":0,"RoomSceneLocationId":"","IsSandbox":False,"DataBlobName":"",
-        "PlayerEventId":None,"Private":False,"GameInProgress":False,"MaxCapacity":0,"IsFull":False
-    }
-    if os.path.isfile(path):
-        try:
-            t=open(path,"r",encoding="utf-8").read().strip()
-            if t: gs.update(json.loads(t))
-        except: pass
-    return gs
 
 @app.websocket("/hub/v1")
-async def signalr(ws:WebSocket):
+async def hub(ws: WebSocket):
     await ws.accept()
+    userid = 6007619
+
     try:
-        msg=await ws.receive()
-        if "text" in msg and msg["text"]=='{"protocol":"json","version":1}\x1e': await ws.send_text('{}\x1e')
-        await send(ws,{
-            "type":1,"invocationId":"owo","nonblocking":True,"target":"HubConnection",
-            "arguments":["{\"url\":\"ws://localhost:2003\",\"ConnectionId\":\"RebornConnect\"}"],
-            "item":"","result":"200 OK","error":""
-        })
         while True:
-            msg=await ws.receive()
-            if msg["type"]=="websocket.disconnect": break
-            raw=msg.get("text") or msg.get("bytes",b"").decode("utf-8")
-            if not raw: continue
-            raw=raw.rstrip("\x1e")
-            try:data=json.loads(raw)
-            except: continue
-            if data.get("type")==1 and data.get("target")=="SubscribeToPlayers":
-                gs=load_gamesession()
-                await send(ws,{
-                    "type":1,"invocationId":"uwu","nonblocking":True,"target":"Notification",
-                    "arguments":[json.dumps({"Id":4,"Msg":{"PlayerId":6007619,"IsOnline":True,"PlayerType":2,"GameSession":gs}})],
-                    "item":"","result":"200 OK","error":""
-                })
-    except WebSocketDisconnect: print("SignalR disconnected")
+            message = await ws.receive()
+            
+            if 'text' in message:
+                msg = message['text']
+            elif 'bytes' in message:
+                msg = message['bytes']
+            else:
+                continue
+
+            response = await signalr_handler(msg, userid)
+            await ws.send_text(response)
+    except Exception as e:
+        print("WebSocket closed:", e)
 
 
 
