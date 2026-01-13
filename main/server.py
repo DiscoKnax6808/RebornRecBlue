@@ -7,10 +7,16 @@ import time
 import random
 import math
 import aiohttp
+from pathlib import Path
 
 active_ws: WebSocket | None = None
 discord_ws: aiohttp.ClientWebSocketResponse | None = None
 discord_http: aiohttp.ClientSession | None = None
+
+clients = {}
+PRESENCE_FILE = Path("SaveData/gamesession.txt")
+
+build_date = "2016"
 
 
 BASE_DIR = os.path.join(os.getcwd(), "SaveData")
@@ -74,10 +80,20 @@ async def nameserver():
 async def nameserver():
     return {"API": "http://localhost:2003", "Images": "http://localhost:2004", "Notifications": "http://localhost:2003"}
 
+years = ["2016","2017","2018","2019","2020","2021","2022", "2023"]
+
 @app.get("/api/versioncheck/v3")
 @app.get("/api/versioncheck/v2")
 @app.get("/api/versioncheck/v1")
-async def versioncheckv1():
+async def versioncheckv1(request: Request):
+
+    v = request.query_params("v")
+
+    vyear = v[0]+v[1]+v[2]+v[3]
+
+    if vyear in years:
+        build_date = vyear
+
     return {"ValidVersion": True}
 
 @app.post("/api/players/v1/getorcreate")
@@ -684,45 +700,6 @@ async def sendwsmsg(enum: int, msg: str):
 
 
 
-
-
-
-
-# This is for the backend Discord announcements stuff.
-async def connect_discord_backend():
-    global discord_ws, discord_http
-
-    discord_http = aiohttp.ClientSession()
-
-    while True:
-        try:
-            discord_ws = await discord_http.ws_connect(
-                "ws://us5.abrhosting.com:25528/ws",
-                heartbeat=20
-            )
-            print("[DiscordBackend] connected")
-
-
-            async for msg in discord_ws:
-
-                msg2 = json.loads(msg.data)
-
-                if msg2.get("api") == "announcement":
-                    await sendwsmsg(2, str(msg2.get("msg")))
-
-
-                if msg.type == aiohttp.WSMsgType.TEXT:
-                    print("[DiscordBackend]", msg.data)
-                    if active_ws:
-                        await active_ws.send_text(msg.data)
-
-        except Exception as e:
-            print("[DiscordBackend] disconnected:", e)
-
-        await asyncio.sleep(3)  
-
-
-
 @wsserver.websocket("/api/notification/v2")
 async def websocket_endpoint(websocket: WebSocket):
     global active_ws
@@ -759,90 +736,75 @@ async def websocket_endpoint(websocket: WebSocket):
         print(f"WebSocket client disconnected: {websocket.client}")
 
 
-async def signalr_handler(in_data, userid):
-    if isinstance(in_data, bytes):
-        messages = in_data.decode('utf-8').split('\x1e')[0]
-    else:
-        messages = in_data.split('\x1e')[0]
 
-    try:
-        data = json.loads(messages)
-    except json.JSONDecodeError as e:
-        return json.dumps({
-            "type": 1,
-            "target": "Error",
-            "arguments": [f"Invalid JSON: {str(e)}"]
-        }) + '\x1e'
-
-    target = data.get('target')
-
-    if target in ["SubscribeToPlayers", "heartbeat", "heartbeat2"]:
-        new_game_session = {
-            "GameSessionId": 20182,
-            "PhotonRegionId": "us",
-            "PhotonRoomId": "1Reborn0.4.1",
-            "Name": "DormRoom",
-            "RoomId": 1,
-            "RoomSceneId": 1,
-            "RoomSceneLocationId": "76d98498-60a1-430c-ab76-b54a29b7a163",
-            "IsSandbox": True,
-            "DataBlobName": "",
-            "PlayerEventId": None,
-            "Private": False,
-            "GameInProgress": False,
-            "MaxCapacity": 20,
-            "IsFull": False
-        }
-
-        new_msg = {
-            "PlayerId": userid,
-            "IsOnline": True,
-            "PlayerType": 2,
-            "GameSession": new_game_session
-        }
-
-        notification_payload = {
-            "Id": 12,
-            "Msg": new_msg
-        }
-
-        response = {
-            "type": 1,
-            "target": "Notification",
-            "arguments": [json.dumps(notification_payload)]
-        }
-
-        return json.dumps(response) + '\x1e'
-
-    response = {
-        "type": 1,
-        "target": "Notification",
-        "arguments": []
-    }
-    return json.dumps(response) + '\x1e'
-
-
+# SignalR btw
 @app.websocket("/hub/v1")
 async def hub(ws: WebSocket):
     await ws.accept()
-    userid = 6007619
+    cid = "1"
+    clients[cid] = ws
+
+    async def ping():
+        while cid in clients:
+            try:
+                await asyncio.sleep(15)
+                await ws.send_text(json.dumps({"type": 6}) + "\x1e")
+            except:
+                break
+
+    asyncio.create_task(ping())
 
     try:
+        await ws.send_text(json.dumps({"protocol": "json", "version": 1}) + "\x1e")
+
         while True:
-            message = await ws.receive()
-            
-            if 'text' in message:
-                msg = message['text']
-            elif 'bytes' in message:
-                msg = message['bytes']
-            else:
-                continue
+            data = await ws.receive_text()
+            for raw in data.split("\x1e"):
+                if not raw or raw[0] != "{":
+                    continue
+                try:
+                    msg = json.loads(raw)
+                except:
+                    continue
 
-            response = await signalr_handler(msg, userid)
-            await ws.send_text(response)
-    except Exception as e:
-        print("WebSocket closed:", e)
+                if msg.get("type") != 1:
+                    continue
 
+                if msg.get("target") == "SubscribeToPlayers":
+                    await ws.send_text(json.dumps({
+                        "type": 3,
+                        "invocationId": msg.get("invocationId", "0")
+                    }) + "\x1e")
+
+                    try:
+                        with open(PRESENCE_FILE, "r", encoding="utf-8") as f:
+                            presence = json.load(f)
+                    except:
+                        presence = {}
+
+                    await ws.send_text(json.dumps({
+                        "type": 1,
+                        "target": "Notification",
+                        "arguments": [json.dumps({
+                            "Id": "PresenceUpdate",
+                            "Msg": presence
+                        })]
+                    }) + "\x1e")
+
+    except:
+        pass
+    finally:
+        clients.pop(cid, None)
+
+@app.post("/hub/v1/negotiate")
+async def negotiate():
+    return {
+        "negotiateVersion": 0,
+        "connectionId": "",
+        "availableTransports": [
+            {"transport": "WebSockets", "transferFormats": ["Text"]}
+        ]
+    }
 
 
 
@@ -909,8 +871,7 @@ async def startserver():
         uvicorn.Server(img_config_http).serve(),
         uvicorn.Server(ws_config).serve(),
         uvicorn.Server(img_config).serve(),
-        uvicorn.Server(api_http_config).serve(),
-        connect_discord_backend()
+        uvicorn.Server(api_http_config).serve()
     )
 
 if __name__ == "__main__":
